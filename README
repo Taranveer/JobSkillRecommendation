@@ -1,3 +1,34 @@
-
 READ ME
-model.wv.save_word2vec_format('w2v.txt', binary=False)
+
+Step 1: Run word2vec 
+		| train model: data from '../../corpus/jobs-linewise.pkl'
+		| Save model : '../models/word2vec_jobs.model'
+		| load model : (next time) '../models/word2vec_jobs.model'
+		| Go to '../models/' folder Open ipython 
+		| model = gensim.models.Word2Vec.load('../models/word2vec_jobs.model')
+		| model.wv.save_word2vec_format('../embeddings/w2v.300d.txt', binary=False)
+
+
+Step 2: Run vocab_utils (in ipython execfile(vocab_utils.py))
+		| dataset = Dataset("jobs_linewise.pkl", "../embeddings/w2v.300d.txt")
+		| dataset.generate_vocab()
+		| write_vocab(dataset.vocab, "vocab_jobs_train.txt")
+		| vocab = load_vocab("vocab_jobs_train.txt")
+		| export_trimmed_w2v_vectors(vocab, "../embeddings/w2v.300d.txt", "trimmed_embeddings_train_jobs.npz")
+		| glove_array = get_trimmed_w2v_vectors("trimmed_embeddings_train_jobs.npz")
+
+Step 3: sif_model.py (in ipython execfile(vocab_utils.py))
+		| Modify default files in sif_models based on names you have given - argparse
+		| sif_model.train_model()
+		| sif_model.save_model()
+		| sif_model.load_model()
+		| sif_model.trainEmbeddings #[have embedding for each job in numpy array] - Refer sentence_dict
+		| sif_model.getConceptEmbeddings() #loads from skills list
+		| sif_model.getRanking(sent, 10) #[will give top 10 skills closese to it sent is an unseen job description]
+
+		
+
+
+
+
+
