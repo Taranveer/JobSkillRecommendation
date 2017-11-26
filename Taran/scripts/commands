@@ -1,0 +1,52 @@
+python process_concepts.py --concepts ../../concepts/concepts-wiki.txt --output ../../concepts/concepts-wiki-clean.txt 
+python process_concepts.py --concepts ../../concepts/concept-books.txt --output ../../concepts/concepts-books-clean.txt 
+python process_concepts.py --concepts ../../concepts/concepts_intersection.txt --output ../../concepts/concepts_intersection-clean.txt 
+
+**---books---**
+python pre_process_text.py --corpus book_raw.pkl --output book_clean.pkl
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts_intersection-clean.txt --corpus ../../corpus/books/book_clean.pkl --output ../../corpus-tagged/book/book_intersection_delim.pkl --tag "t"
+
+python post_process_text.py --corpus ../../corpus-tagged/book/book_intersection_delim.pkl --output ../../corpus-tagged/book/book_intersection_linewise.pkl --agg 0 
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts-wiki-clean.txt,../../concepts/concepts-books-clean.txt  --corpus ../../corpus/books/book_clean.pkl --output ../../corpus-tagged/book/book_union_delim.pkl --tag "t"
+
+python post_process_text.py --corpus ../../corpus-tagged/book/book_union_delim.pkl --output ../../corpus-tagged/book/book_union_linewise.pkl --agg 0 
+
+
+**---wikipedia---**
+python pre_process_text.py --corpus wikipedia_raw.pkl --output wikipedia_clean.pkl
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts_intersection-clean.txt --corpus ../../corpus/wikipedia/wikipedia_clean.pkl --output ../../corpus-tagged/wikipedia/wikipedia_intersection_delim.pkl --tag "w"
+
+python post_process_text.py --corpus ../../corpus-tagged/wikipedia/wikipedia_intersection_delim.pkl --output ../../corpus-tagged/wikipedia/wikipedia_intersection_linewise.pkl --agg 0 
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts-wiki-clean.txt,../../concepts/concepts-books-clean.txt  --corpus ../../corpus/wikipedia/wikipedia_clean.pkl --output ../../corpus-tagged/wikipedia/wikipedia_union_delim.pkl --tag "w"
+
+python post_process_text.py --corpus ../../corpus-tagged/wikipedia/wikipedia_union_delim.pkl --output ../../corpus-tagged/wikipedia/wikipedia_union_linewise.pkl --agg 0 
+
+
+**---video---**
+
+python pre_process_text.py --corpus video_raw.pkl --output video_clean.pkl
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts_intersection-clean.txt --corpus ../../corpus/video/video_clean.pkl --output ../../corpus-tagged/video/video_intersection_delim.pkl --tag "v"
+
+python post_process_text.py --corpus ../../corpus-tagged/video/video_intersection_delim.pkl --output ../../corpus-tagged/video/video_intersection_linewise.pkl --agg 0
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts-wiki-clean.txt,../../concepts/concepts-books-clean.txt  --corpus ../../corpus/video/video_clean.pkl --output ../../corpus-tagged/video/video_union_delim.pkl --tag "v"
+
+python post_process_text.py --corpus ../../corpus-tagged/video/video_union_delim.pkl --output ../../corpus-tagged/video/video_union_linewise.pkl --agg 0
+
+EC2 instance
+
+python phrase_tagger.py --concept_filenames concepts-wiki-clean.txt,concepts-books-clean.txt  --corpus wikipedia_clean.pkl --output wikipedia_union_delim.pkl --tag "w"
+
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts_meta-clean.txt  --corpus ../../corpus-tagged/video/video_union_delim_0.pkl --output ../../corpus-tagged/video/video_union_delim_meta.pkl --tag m
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts_meta-clean.txt  --corpus ../../corpus-tagged/book/book_union_delim_0.pkl --output ../../corpus-tagged/book/book_union_delim_meta.pkl --tag v --concept_tag_out ../../concepts/concepts-meta-tagged.pkl
+
+--concept_tag_out ../../concepts/concepts-wiki-tagged.pkl
+
+python phrase_tagger.py --concept_filenames ../../concepts/concepts_meta-clean.txt  --corpus ../../corpus-tagged/wikipedia/wikipedia_union_delim_0.pkl --output ../../corpus-tagged/wikipedia/wikipedia_union_delim_meta.pkl --tag w 
