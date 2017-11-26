@@ -1,1 +1,3 @@
-Hi
+
+READ ME
+model.wv.save_word2vec_format('w2v.txt', binary=False)
