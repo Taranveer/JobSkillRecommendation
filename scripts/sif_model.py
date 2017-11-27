@@ -11,7 +11,7 @@ def parse_args():
     parser = ArgumentParser(description= "SIF Embedding")
 
     # data paths
-    data_path = "../corpus-tagged/book/"
+    data_path = "../corpus-tagged/book/" ## modify the paths according to the folder structure
     parser.add_argument('--data_path', default=data_path, type = str)
     parser.add_argument('--sentence_file', default="../corpus-tagged/book/book_union_linewise.pkl",type=str)
     parser.add_argument('--embeddings_file', default='../embeddings/w2v-books-union-300d.txt',type=str)
@@ -44,18 +44,22 @@ class SIF_Model(object):
         self.alpha = 1e-3
         self.data = self.getData()
         self.vocab = args.vocab
-        self.word_embeddings = args.word_embeddings
-        self.VOCAB_SIZE = len(self.vocab)
+        self.word_embeddings = args.word_embeddings ### Loaded from vocab_utils in main() below, filename passed above
+        self.VOCAB_SIZE = len(self.vocab) ### Loaded from vocab_utils in main() below, filename passed above
         self.vocab_count = self.load_word_counters()
         self.getConceptVectors()
         # self.loadModel()
 
     def train(self):
-        self.weights = self.getWeightedProbabilities()
-        self.sent_indices, self.sent_mask = self.createStructure()
+        self.weights = self.getWeightedProbabilities() #getWeight corrosponding to each word
+        self.sent_indices, self.sent_mask = self.createStructure() #getSequence of word indices for every sentence
+        
+        #get weights mapping to sentence sequence
         self.sent_weights = self.seq2weight(self.sent_indices, self.sent_mask, self.weights)
         print self.sent_weights.shape
         # self.saveEntries()
+        
+        #get trainEmbedding computed using word_embedding which was loaded before 
         self.trainEmbeddings = self.SIF_embedding(self.word_embeddings, self.sent_indices, self.sent_weights)
         print "Model Training Completed. Start Saving"
 
@@ -107,6 +111,12 @@ class SIF_Model(object):
         return filtered_dict
 
     def getWeightedProbabilities(self):
+        """
+        Computes a array of 1*VOCAB_SIZE stores weights corrosponding to each word
+        INPUT: vocab[word] : index mapping
+        INPUT" vocab_count[word]: count mapping
+        return: weights TFIDF type *** Add TFKLD here
+        """
         freqs = np.zeros((1, self.VOCAB_SIZE), dtype="float")
         for word in self.vocab:
             idx = self.vocab[word]
@@ -117,12 +127,21 @@ class SIF_Model(object):
         return weights
 
     def printShapes(self):
+        """
+        print statements for debugging
+        """
         print "Vocab Size: %s"%(self.VOCAB_SIZE)
         print self.weights.shape
         print self.sent_indices.shape
         print self.sent_indices.shape
 
     def prepare_data(self,list_of_seqs):
+        """
+        Helper function for create Structure
+        param: list of sequence of a single sentence
+        return: x, mask: x stores sequence of word indices in a sentence, mask stores 1 corrosponding to indices
+        masks helps in indentifying variable lenght of sentence
+        """
         lengths = [len(s) for s in list_of_seqs]
         n_samples = len(list_of_seqs)
         maxlen = np.max(lengths)
@@ -136,6 +155,10 @@ class SIF_Model(object):
         return x, x_mask
 
     def getConceptVectors(self):
+        """
+        Get words embeddibngs corrosponding to concept names
+        To be used to see distance of a given sentence to a concept in getRanking function
+        """
         concepts = []
         with open(self.args.concept_filenames) as f:
             data  = f.read()
@@ -151,6 +174,11 @@ class SIF_Model(object):
         self.concepts_embeddings = normalize(self.concepts_embeddings)
 
     def createStructure(self):
+        """
+        return x, mask: x stores sequence of word indices in a sentence, mask stores 1 corrosponding to indices
+                masks helps in indentifying variable lenght of sentence
+        
+        """
         sentence_indices = []
         sentence_weights = []
         for line in self.data:
@@ -167,6 +195,11 @@ class SIF_Model(object):
         # return sentence_indices, sentence_weights
 
     def seq2weight(self, seq, mask, weight4ind):
+        """
+        param: sequence of word indices, mask of word indices of a sentence
+        param: weight4ind weights corrosponding to word indices calculated using getWeightedProb
+        return: weight as same shape as seq, weights of words corrosponding to sequence of sentences 
+        """
         weight = np.zeros(seq.shape).astype('float32')
         for i in xrange(seq.shape[0]):
             for j in xrange(seq.shape[1]):
@@ -232,6 +265,13 @@ class SIF_Model(object):
         return emb
 
     def getSIFEmbedding(self, sent):
+        """
+        Get Sentence embedding for a new sentence
+        INPUT: Sentence word indices sequence
+        INPUT: word_embedding
+        INPUT: weights 1*VOCABSIZE weights corrosponding to each word
+        RETURN: Sentence embedding
+        """
         corpus = [sent]
         concept_filenames = self.args.concept_filenames.split(",")
         clean_pages_space = map(lambda x: " " + "  ".join(x.split()),
@@ -266,6 +306,9 @@ class SIF_Model(object):
 
 
     def getRanking(self, sent,n=10):
+        """
+        Get top10 concepts closest to sentence embeddings
+        """
         sent = sent.lower()
         sent = cleanContentPage(sent)
         sent_embedding = normalize(self.getSIFEmbedding(sent))
@@ -279,7 +322,7 @@ class SIF_Model(object):
             print self.concepts[idx]
 
 
-
+##**** DOSENT EXECUTE VOCAB ALREADY BUILT DEFAULT FALSE ****##
 args = parse_args()
 print pprint.pformat(args.__dict__)
 if args.build_vocab:
@@ -290,7 +333,8 @@ if args.build_vocab:
     write_vocab(vocab, args.vocab_file)
     vocab = load_vocab(args.vocab_file)
     export_trimmed_w2v_vectors(vocab, args.embeddings_file, args.trimmed_embedding_file)
-
+    
+### *****LOAD VOCAB AND WORD EMBEDDINGS HERE FROM VOCAB UTILS FUNCTION****###
 args.vocab = load_vocab(args.vocab_file)
 print len(args.vocab)
 args.word_embeddings = get_trimmed_w2v_vectors(args.trimmed_embedding_file)
