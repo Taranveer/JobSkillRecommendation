@@ -17,6 +17,7 @@ import argparse
 
 import pickle
 
+
 def dump(obj,filename):
     filehandler = open(filename,"wb")
     pickle.dump(obj,filehandler)
@@ -116,6 +117,9 @@ class concept_tagging:
         Added delim which protects a conept from replacing it again.
         """
         #print "In join phrase concept:", concept
+        #print concept
+        #concept = concept.decode("utf-8")
+        #print concept
         concept_break = concept.split("  ")
         tag = self.tag
         left_tag = " " + tag + "_"
@@ -153,9 +157,11 @@ class concept_tagging:
         """
         concepts_all = []
         for source_name in self.concept_filenames:
-            f = open(source_name, 'rb')
-            concepts = f.readlines()
-            f.close()
+            with open(source_name) as f:
+                concepts = [line.decode('utf-8').strip() for line in f]
+            #f = open(source_name, 'rb')
+            #concepts = f.readlines()
+            #f.close()
 
             concepts = map(self.process_concepts, concepts)
             concepts_all = concepts_all + concepts
