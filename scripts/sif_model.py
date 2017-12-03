@@ -3,6 +3,7 @@ from sklearn.decomposition import TruncatedSVD
 from argparse import ArgumentParser
 from vocab_utils import *
 from data_utils import *
+from pre_process_text import *
 import pprint
 import phrase_tagger
 from sklearn.preprocessing import normalize
@@ -11,18 +12,17 @@ def parse_args():
     parser = ArgumentParser(description= "SIF Embedding")
 
     # data paths
-    data_path = "../corpus-tagged/book/" ## modify the paths according to the folder structure
+    data_path = "" ## modify the paths according to the folder structure
     parser.add_argument('--data_path', default=data_path, type = str)
-    parser.add_argument('--sentence_file', default="../corpus-tagged/book/book_union_linewise.pkl",type=str)
-    parser.add_argument('--embeddings_file', default='../embeddings/w2v-books-union-300d.txt',type=str)
-
+    parser.add_argument('--sentence_file', default="../../corpus-tagged/jobs_docwise.pkl",type=str)
+    parser.add_argument('--embeddings_file', default='../embeddings/w2v.300d.txt',type=str)
 
     #save file path
-    parser.add_argument('--vocab_file', default=data_path+"vocab-union.txt",type=str)
-    parser.add_argument('--trimmed_embedding_file', default=data_path+"trimmed_embedding-union.npz", type=str)
+    parser.add_argument('--vocab_file', default="../models/vocab_jobs_train.txt",type=str)
+    parser.add_argument('--trimmed_embedding_file', default="../models/trimmed_embeddings_train_jobs.npz", type=str)
 
-    parser.add_argument('--object_file', default=data_path+"object_file-union.npz", type=str)
-    parser.add_argument('--concept_filenames', default="../concepts/concepts-union-clean.txt", type=str)
+    parser.add_argument('--object_file', default="../models/object_file-jobs.npz", type=str)
+    parser.add_argument('--concept_filenames', default="../skills/skills_intersection_2600_clean.txt", type=str)
 
     # vocab building
     parser.add_argument('--build', dest='build_vocab', action='store_true')
@@ -164,7 +164,7 @@ class SIF_Model(object):
             data  = f.read()
             data = data.split('\n')
             for line in data:
-                concepts.append('t_'+"_".join(line.split())+'_t')
+                concepts.append('s_'+"_".join(line.split())+'_s')
 
         concepts = list(set(concepts))
         self.concepts = filter(lambda x : x in self.vocab, concepts)
@@ -274,9 +274,8 @@ class SIF_Model(object):
         """
         corpus = [sent]
         concept_filenames = self.args.concept_filenames.split(",")
-        clean_pages_space = map(lambda x: " " + "  ".join(x.split()),
-                                corpus)  ##this line is **important** introduce double spaces
-        tagged_corpus = phrase_tagger.concept_tagging(clean_pages_space, concept_filenames, "t")
+        clean_pages_space = map(lambda x: " " + "  ".join(x.split()),corpus)  ##this line is **important** introduce double spaces
+        tagged_corpus = phrase_tagger.concept_tagging(corpus, concept_filenames, "s")
         tagged_corpus.load_concepts()
         corpus_result = tagged_corpus.tag_corpus()
         result = corpus_result[0]
@@ -310,16 +309,21 @@ class SIF_Model(object):
         Get top10 concepts closest to sentence embeddings
         """
         sent = sent.lower()
-        sent = cleanContentPage(sent)
-        sent_embedding = normalize(self.getSIFEmbedding(sent))
+        #sent = cleanContentPage(sent)
+        sent = getCleanText(sent)
+        
+        sent_embedding = normalize(self.getSIFEmbedding(sent[0]))
         print sent_embedding.shape
         print self.concepts_embeddings.shape
         conceptDistances = np.dot(self.concepts_embeddings, sent_embedding.T)
         conceptDistances = conceptDistances.reshape(conceptDistances.shape[0])
         rankedIndices = conceptDistances.argsort()[-n:][::-1]
         print rankedIndices
+        concepts_list = []
         for idx in rankedIndices:
             print self.concepts[idx]
+            concepts_list.append(self.concepts[idx])
+        return rankedIndices, concepts_list
 
 
 ##**** DOSENT EXECUTE VOCAB ALREADY BUILT DEFAULT FALSE ****##

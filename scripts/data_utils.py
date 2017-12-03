@@ -123,8 +123,8 @@ class ContentExtractor:
 '''
 
 import re
-from wordsegment import load,segment
-load()
+#from wordsegment import load,segment
+#load()
 
 def performSegmentation(word):
     flag = word.endswith('.')
